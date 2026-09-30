@@ -1,0 +1,14 @@
+.env
+.env.*
+!.env.example
+application-local.properties
+application-local.yml
+application-local.yaml
+*.log
+.gradle/
+build/
+bin/
+.idea/
+.vscode/
+Thumbs.db
+.DS_Store
