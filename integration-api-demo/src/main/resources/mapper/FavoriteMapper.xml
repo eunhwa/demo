@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.integrationdemo.dao.mapper.FavoriteMapper">
+    <resultMap id="favoriteResult" type="com.example.integrationdemo.dao.entity.Favorite">
+        <id property="id" column="id"/>
+        <result property="isbn" column="isbn"/>
+        <result property="title" column="title"/>
+        <result property="description" column="description"/>
+        <result property="publisher" column="publisher"/>
+        <result property="thumbnail" column="thumbnail"/>
+        <result property="url" column="url"/>
+        <result property="createdAt" column="created_at"/>
+        <collection property="authorRows" ofType="com.example.integrationdemo.dao.entity.FavoriteAuthor" notNullColumn="author_order">
+            <id property="authorOrder" column="author_order"/>
+            <result property="author" column="author"/>
+        </collection>
+    </resultMap>
+
+    <insert id="insertFavorite" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO favorites (isbn, title, description, publisher, thumbnail, url, created_at)
+        VALUES (#{isbn}, #{title}, #{description}, #{publisher}, #{thumbnail}, #{url}, #{createdAt})
+    </insert>
+
+    <insert id="insertAuthors">
+        INSERT INTO favorite_authors (favorite_id, author_order, author)
+        VALUES
+        <foreach collection="authors" item="author" index="position" separator=",">
+            (#{id}, #{position}, #{author})
+        </foreach>
+    </insert>
+
+    <select id="existsByIsbn" resultType="boolean">
+        SELECT EXISTS (SELECT 1 FROM favorites WHERE isbn = #{isbn})
+    </select>
+
+    <select id="count" resultType="long">
+        SELECT COUNT(*) FROM favorites
+    </select>
+
+    <select id="findById" resultMap="favoriteResult" resultOrdered="true">
+        SELECT f.id, f.isbn, f.title, f.description, f.publisher, f.thumbnail, f.url,
+               f.created_at, a.author_order, a.author
+        FROM favorites f
+        LEFT JOIN favorite_authors a ON a.favorite_id = f.id
+        WHERE f.id = #{id}
+        ORDER BY a.author_order
+    </select>
+
+    <select id="findPage" resultMap="favoriteResult" resultOrdered="true">
+        SELECT f.id, f.isbn, f.title, f.description, f.publisher, f.thumbnail, f.url,
+               f.created_at, a.author_order, a.author
+        FROM (
+            SELECT id, isbn, title, description, publisher, thumbnail, url, created_at
+            FROM favorites
+            ORDER BY id DESC
+            LIMIT #{size} OFFSET #{offset}
+        ) f
+        LEFT JOIN favorite_authors a ON a.favorite_id = f.id
+        ORDER BY f.id DESC, a.author_order
+    </select>
+
+    <select id="lockById" resultType="long">
+        SELECT id FROM favorites WHERE id = #{id} FOR UPDATE
+    </select>
+
+    <delete id="deleteAuthors">
+        DELETE FROM favorite_authors WHERE favorite_id = #{id}
+    </delete>
+
+    <delete id="deleteFavorite">
+        DELETE FROM favorites WHERE id = #{id}
+    </delete>
+</mapper>
